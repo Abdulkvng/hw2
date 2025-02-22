@@ -119,7 +119,7 @@ std::vector<Product *> MyDataStore::search(std::vector<std::string> &terms, int 
     std::set<Product *> hits;
     std::set<Product *> temp;
     std::set<std::string> keywords;
-    for (unsigned int i = 0; i < terms.size(); i++)
+    for (size_t i = 0; i < terms.size(); i++)
     {
         std::string term = terms[i];
         std::transform(term.begin(), term.end(), term.begin(), ::tolower);
