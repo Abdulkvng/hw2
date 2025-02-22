@@ -1,142 +1,157 @@
+#include <iostream>
+#include <set>
+#include <vector>
+#include <string>
 #include "mydatastore.h"
 #include "util.h"
-#include <algorithm>
-#include <iostream>
-#include <iterator>
-
-// Constructor
-MyDataStore::MyDataStore() {}
-
-// Destructor - just in case
-MyDataStore::~MyDataStore() {
-    // 
-    for (size_t i = 0; i < products_.size(); i++) {
-        delete products_[i];
+MyDataStore::MyDataStore(){}
+MyDataStore::~MyDataStore()
+{for (unsigned int i = 0; i < products_.size(); i++)
+    {delete products_[i];
     }
-    // 
-    std::map<std::string, User*>::iterator userIt;
-    for (userIt = users_.begin(); userIt != users_.end(); ++userIt) {
-        delete userIt->second;
-    }
-}
+    for (unsigned int i = 0; i < users_.size(); i++)
+    {delete users_[i];}}
 
-// Add a product or an item to the data store
-void MyDataStore::addProduct(Product* p) {
+void MyDataStore::addProduct(Product *p)
+//add product or item
+{
     products_.push_back(p);
-    // Index the product by its keywords
     std::set<std::string> keywords = p->keywords();
-    std::set<std::string>::iterator kit;
-    for (kit = keywords.begin(); kit != keywords.end(); ++kit) {
-        keywordIndex_[*kit].insert(p);
+    for (const std::string &keyword : keywords)
+    {std::string lowerKeyword = convToLower(keyword);
+        keywordIndex_[lowerKeyword].insert(p);}
+}
+
+void MyDataStore::addUser(User *u)
+{users_.push_back(u);}
+//add user
+
+std::vector<Product *> MyDataStore::getProducts()
+{return products_;}
+
+std::vector<User *> MyDataStore::getUsers()
+{return users_;}
+//void MyDataStore::addToCart(std::string username, Product p)
+void MyDataStore::addToCart(std::string username, Product *p)
+{
+    User *user = nullptr;
+    for (User *u : users_)
+    {
+        if (u->getName() == username)
+        {user = u;
+            break;} }
+
+    if (user == nullptr)
+    {std::cout << "Invalid request" << std::endl;
+        return;}
+    userCarts_[username].push_back(p);
+}
+
+void MyDataStore::viewCart(std::string username)
+{User *user = nullptr;
+for (User *u : users_)
+    { if (u->getName() == username)
+        {user = u;break;} }
+    if (user == nullptr)
+    {std::cout << "Invalid username" << std::endl;return;
+    }
+
+    std::vector<Product *> cart = userCarts_[username];
+    for (unsigned int i = 0; i < cart.size(); i++)
+    {
+        std::cout << "Item: " << i + 1 << std::endl;
+        std::cout << cart[i]->displayString() << std::endl;
     }
 }
 
-// Add a user to the data store
-void MyDataStore::addUser(User* u) {
-    std::string uname = u->getName();
-    users_[uname] = u;
-    // Initialize an empty cart for the new user
-    if (userCarts_.find(uname) == userCarts_.end()) {
-        userCarts_[uname] = std::vector<Product*>();
+void MyDataStore::buyCart(std::string username)
+{User *user = nullptr;
+    for (User *u : users_)
+    {if (u->getName() == username) {user = u;break;}
     }
+
+    if (user == nullptr)
+    { std::cout << "Invalid username" << std::endl;
+  return;
+    }
+
+    std::vector<Product *> &cart = userCarts_[username];
+    std::vector<User *>::iterator userIt = std::find_if(users_.begin(), users_.end(), [&username](User *u)
+                                                        { return u->getName() == username; });
+    user = *userIt;
+    double balance = user->getBalance();
+
+    std::vector<Product *>::iterator it = cart.begin();
+    while (it != cart.end())
+    {
+        Product *product = *it;
+        if (product->getQty() > 0 && balance >= product->getPrice())
+        {product->subtractQty(1);
+            user->deductAmount(product->getPrice());
+            balance -= product->getPrice();
+            it = cart.erase(it);}
+        else{++it;}}
 }
 
-// Search for products based on terms (AND/OR)
-std::vector<Product*> MyDataStore::search(std::vector<std::string>& terms, int type) {
-    std::set<Product*> resultSet;
-    if (terms.empty()) {
-        return std::vector<Product*>();
+void MyDataStore::removeCart(std::string username, Product *p)
+{
+    User *user = nullptr;
+    for (User *u : users_)
+    { if (u->getName() == username)
+        {  user = u; break;}
     }
-    // AND search
-    if (type == 0) {
-        if (keywordIndex_.find(terms[0]) != keywordIndex_.end()) {
-            resultSet = keywordIndex_[terms[0]];
-        } else {
-            return std::vector<Product*>();
-        }
-        for (size_t i = 1; i < terms.size(); i++) {
-            if (keywordIndex_.find(terms[i]) != keywordIndex_.end()) {
-                resultSet = setIntersection(resultSet, keywordIndex_[terms[i]]);
-            } else {
-                resultSet.clear();
-                break;
-            }
-        }
+//remove if null, show error 
+// changed from map to vector
+    if (user == nullptr)
+    { std::cout << "Error: User '" << username << "' not found." << std::endl;
+       return;
     }
-    // OR search
-    else if (type == 1) {
-        for (size_t i = 0; i < terms.size(); i++) {
-            if (keywordIndex_.find(terms[i]) != keywordIndex_.end()) {
-                resultSet = setUnion(resultSet, keywordIndex_[terms[i]]);
-            }
-        }
-    }
-    return std::vector<Product*>(resultSet.begin(), resultSet.end());
+
+    std::vector<Product *> cart = userCarts_[username];
+    for (unsigned int i = 0; i < cart.size(); i++)
+    { if (cart[i] == p)
+        {    cart.erase(cart.begin() + i);    break;}
+ }
 }
 
-// Save the current state of the database to a file
-void MyDataStore::dump(std::ostream& ofile) {
-    // Dump products
-
-    ofile << "<products>\n" ;
-
-    for (size_t i = 0; i < products_.size(); i++) {
-           products_[i]->dump(ofile);}
-
-    ofile <<  "</products>\n";
-    // Dump users
-    std::map<std::string, User*>::iterator it;
-    ofile << "<users>\n" ; 
-
-    for (it = users_.begin(); it != users_.end(); ++it) {
-        ofile << "user" << std::endl;
-        ofile << it->second->getName() << " " << it->second->getBalance() << " 0" << std::endl;}
-    
-    ofile <<  "</users>\n";}
-
-// Add a product t0]o cart
-void MyDataStore::addToCart(const std::string& username, Product* product) {
-    if (users_.find(username) != users_.end()) {
-        userCarts_[username].push_back(product);
-    } else {
-        std::cout << "Invalid username" << std::endl;
+std::vector<Product *> MyDataStore::search(std::vector<std::string> &terms, int type)
+{
+    std::set<Product *> hits;
+    std::set<Product *> temp;
+    std::set<std::string> keywords;
+    for (unsigned int i = 0; i < terms.size(); i++)
+    {
+        std::string term = terms[i];
+        std::transform(term.begin(), term.end(), term.begin(), ::tolower);
+        if (keywordIndex_.find(term) != keywordIndex_.end())
+        {
+            temp = keywordIndex_[term];
+            if (i == 0)
+            {  hits = temp; }
+            else { if (type == 0) {
+                 hits = setIntersection(hits, temp); }
+                else
+                {       hits = setUnion(hits, temp); }}}
     }
+    std::vector<Product *> hitsVec;
+    for (std::set<Product *>::iterator it = hits.begin(); it != hits.end(); ++it)
+    { hitsVec.push_back(*it);
+    }
+    return hitsVec;
 }
 
-// show what is isnide the cart
-void MyDataStore::viewCart(const std::string& username) const {
-    if (userCarts_.find(username) != userCarts_.end()) {
-        const std::vector<Product*>& cart = userCarts_.find(username)->second;
-        if (cart.empty()) {
-            std::cout << "Cart is empty." << std::endl;
-        } else {
-            for (size_t i = 0; i < cart.size(); i++) {
-                std::cout << "Item " << i + 1 << ":\n" << cart[i]->displayString() << "\n";
-            }
-        }
-    } else {
-        std::cout << "Invalid username" << std::endl;
+void MyDataStore::dump(std::ostream &ofile)
+{
+    ofile << "<products>" << std::endl;
+    for (unsigned int i = 0; i < products_.size(); i++)
+    {
+        products_[i]->dump(ofile);
     }
-}
-
-// it should Process the purchase of items in the cart --
-void MyDataStore::buyCart(const std::string& username) {
-    if (userCarts_.find(username) != userCarts_.end()) {
-        std::vector<Product*>& cart = userCarts_[username];
-        User* user = users_[username];
-        std::vector<Product*>::iterator it = cart.begin();
-        while (it != cart.end()) {
-            Product* product = *it;
-            // Only purchase if product is in stock and user has enough balance
-            if (product->getQty() > 0 && user->getBalance() >= product->getPrice()) {
-                product->subtractQty(1);
-                user->deductAmount(product->getPrice());
-                it = cart.erase(it); // Remove purchased item from cart
-            } else {
-                ++it;
-            }
-        }
-    } else {
-        std::cout << "Invalid username" << std::endl;
+    ofile << "</products>" << std::endl;
+    ofile << "<users>" << std::endl;
+    for (unsigned int i = 0; i < users_.size(); i++)
+    {
+        users_[i]->dump(ofile);
     }
+    ofile << "</users>" << std::endl;
 }

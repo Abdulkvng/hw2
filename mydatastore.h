@@ -15,26 +15,35 @@ public:
     MyDataStore();
     ~MyDataStore();
 
-    void addProduct(Product* p) override;
+    void addProduct(Product* p) ;
 
     // Add a user 
-    void addUser(User* u) override;
+    void addUser(User* u) ;
 
     // Search for products (AND/OR)
-    std::vector<Product*> search(std::vector<std::string>& terms, int type) override;
+    std::vector<Product*> search(std::vector<std::string> &terms, int type) override;
 
     // Save t
-    void dump(std::ostream& ofile) override;
+    void dump(std::ostream &ofile);
+    
+
+    std::vector<Product *> getProducts();
+    std::vector<User *> getUsers();
+
 
     //  helper functions for commands
-    void addToCart(const std::string& username, Product* product);
-    void viewCart(const std::string& username) const;
-    void buyCart(const std::string& username);
+  void addToCart(std::string username, Product *p);
+//add
+//viewCart
+    void viewCart( std::string username) ;
+  void buyCart( std::string username);
+    void removeCart(std::string username, Product *p);
+
 
 private:
     // Data structures to store products and users
     std::vector<Product*> products_; // List of all products
-    std::map<std::string, User*> users_; // Map of users by username
+    std::vector<User *> users_; // Map of users by username
     std::map<std::string, std::set<Product*>> keywordIndex_; // Keyword to products mapping
     std::map<std::string, std::vector<Product*>> userCarts_; // User carts
 };

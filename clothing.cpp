@@ -20,7 +20,7 @@ return keywords;}
 std::string Clothing::displayString() const{
   std::ostringstream oss;
   oss << name_ << '\n'
-  << "Size: " << size_ << "Brand: " << brand_ << '\n'
+  << "Size: " << size_ << " Brand: " << brand_ << '\n'
   << price_ << " " << qty_ << " left.";
   return oss.str();
 }

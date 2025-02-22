@@ -18,7 +18,7 @@ return keywords;}
 std::string Book::displayString() const{
   std::ostringstream oss;
   oss << name_ << '\n'
-  << "Author: " << author_ << "ISBN: " << isbn_ << '\n'
+  << "Author: " << author_ << " ISBN: " << isbn_ << '\n'
   << price_ << " " << qty_ << " left.";
   return oss.str();
 }

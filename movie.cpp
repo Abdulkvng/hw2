@@ -19,7 +19,7 @@ return keywords;}
 std::string Movie::displayString() const{
 std::ostringstream oss;
   oss << name_ << '\n'
-  << "Genre: " << genre_ << "Rating: " << rating_ << '\n'
+  << "Genre: " << genre_ << " Rating: " << rating_ << '\n'
   << price_ << " " << qty_ << " left.";
   return oss.str();
 }
